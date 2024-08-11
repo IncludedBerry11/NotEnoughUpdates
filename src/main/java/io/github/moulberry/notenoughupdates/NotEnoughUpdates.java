@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 NotEnoughUpdates contributors
+ * Copyright (C) 2022-2023 NotEnoughUpdates contributors
  *
  * This file is part of NotEnoughUpdates.
  *
@@ -23,61 +23,40 @@ import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import io.github.moulberry.notenoughupdates.commands.Commands;
+import io.github.moulberry.moulconfig.observer.PropertyTypeAdapterFactory;
+import io.github.moulberry.notenoughupdates.autosubscribe.AutoLoad;
+import io.github.moulberry.notenoughupdates.autosubscribe.NEUAutoSubscribe;
 import io.github.moulberry.notenoughupdates.core.BackgroundBlur;
-import io.github.moulberry.notenoughupdates.cosmetics.CapeManager;
+import io.github.moulberry.notenoughupdates.core.config.ConfigUtil;
 import io.github.moulberry.notenoughupdates.cosmetics.ShaderManager;
-import io.github.moulberry.notenoughupdates.dungeons.DungeonMap;
 import io.github.moulberry.notenoughupdates.listener.ChatListener;
 import io.github.moulberry.notenoughupdates.listener.ItemTooltipEssenceShopListener;
 import io.github.moulberry.notenoughupdates.listener.ItemTooltipListener;
 import io.github.moulberry.notenoughupdates.listener.ItemTooltipRngListener;
 import io.github.moulberry.notenoughupdates.listener.NEUEventListener;
-import io.github.moulberry.notenoughupdates.listener.OldAnimationChecker;
 import io.github.moulberry.notenoughupdates.listener.RenderListener;
-import io.github.moulberry.notenoughupdates.miscfeatures.AbiphoneWarning;
-import io.github.moulberry.notenoughupdates.miscfeatures.AntiCoopAdd;
-import io.github.moulberry.notenoughupdates.miscfeatures.AuctionBINWarning;
-import io.github.moulberry.notenoughupdates.miscfeatures.AuctionProfit;
-import io.github.moulberry.notenoughupdates.miscfeatures.BetterContainers;
-import io.github.moulberry.notenoughupdates.miscfeatures.CrystalOverlay;
-import io.github.moulberry.notenoughupdates.miscfeatures.CrystalWishingCompassSolver;
-import io.github.moulberry.notenoughupdates.miscfeatures.CustomItemEffects;
+import io.github.moulberry.notenoughupdates.listener.WorldListener;
 import io.github.moulberry.notenoughupdates.miscfeatures.CustomSkulls;
-import io.github.moulberry.notenoughupdates.miscfeatures.DwarvenMinesWaypoints;
-import io.github.moulberry.notenoughupdates.miscfeatures.EnchantingSolvers;
 import io.github.moulberry.notenoughupdates.miscfeatures.FairySouls;
-import io.github.moulberry.notenoughupdates.miscfeatures.FishingHelper;
-import io.github.moulberry.notenoughupdates.miscfeatures.ItemCooldowns;
-import io.github.moulberry.notenoughupdates.miscfeatures.ItemCustomizeManager;
-import io.github.moulberry.notenoughupdates.miscfeatures.MiningStuff;
 import io.github.moulberry.notenoughupdates.miscfeatures.NPCRetexturing;
 import io.github.moulberry.notenoughupdates.miscfeatures.Navigation;
-import io.github.moulberry.notenoughupdates.miscfeatures.NullzeeSphere;
 import io.github.moulberry.notenoughupdates.miscfeatures.PetInfoOverlay;
-import io.github.moulberry.notenoughupdates.miscfeatures.PowerStoneStatsDisplay;
 import io.github.moulberry.notenoughupdates.miscfeatures.SlotLocking;
 import io.github.moulberry.notenoughupdates.miscfeatures.StorageManager;
-import io.github.moulberry.notenoughupdates.miscfeatures.SunTzu;
-import io.github.moulberry.notenoughupdates.miscfeatures.customblockzones.CustomBiomes;
 import io.github.moulberry.notenoughupdates.miscfeatures.customblockzones.CustomBlockSounds;
-import io.github.moulberry.notenoughupdates.miscfeatures.customblockzones.DwarvenMinesTextures;
-import io.github.moulberry.notenoughupdates.miscfeatures.updater.AutoUpdater;
-import io.github.moulberry.notenoughupdates.miscgui.CalendarOverlay;
-import io.github.moulberry.notenoughupdates.miscgui.InventoryStorageSelector;
-import io.github.moulberry.notenoughupdates.miscgui.SignCalculator;
-import io.github.moulberry.notenoughupdates.miscgui.TrophyRewardOverlay;
+import io.github.moulberry.notenoughupdates.miscfeatures.inventory.MuseumCheapestItemOverlay;
+import io.github.moulberry.notenoughupdates.miscfeatures.inventory.MuseumItemHighlighter;
+import io.github.moulberry.notenoughupdates.miscgui.itemcustomization.ItemCustomizeManager;
 import io.github.moulberry.notenoughupdates.mixins.AccessorMinecraft;
+import io.github.moulberry.notenoughupdates.oneconfig.IOneConfigCompat;
 import io.github.moulberry.notenoughupdates.options.NEUConfig;
-import io.github.moulberry.notenoughupdates.overlays.EquipmentOverlay;
-import io.github.moulberry.notenoughupdates.overlays.FuelBar;
 import io.github.moulberry.notenoughupdates.overlays.OverlayManager;
 import io.github.moulberry.notenoughupdates.profileviewer.ProfileViewer;
 import io.github.moulberry.notenoughupdates.recipes.RecipeGenerator;
-import io.github.moulberry.notenoughupdates.util.Constants;
-import io.github.moulberry.notenoughupdates.util.SBInfo;
 import io.github.moulberry.notenoughupdates.util.Utils;
-import io.github.moulberry.notenoughupdates.util.XPInformation;
+import io.github.moulberry.notenoughupdates.util.brigadier.BrigadierRoot;
+import io.github.moulberry.notenoughupdates.util.hypixelapi.HypixelItemAPI;
+import io.github.moulberry.notenoughupdates.util.kotlin.KotlinTypeAdapterFactory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
@@ -106,26 +85,42 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+@NEUAutoSubscribe
 @Mod(
 	modid = NotEnoughUpdates.MODID, version = NotEnoughUpdates.VERSION, clientSideOnly = true, useMetadata = true,
 	guiFactory = "io.github.moulberry.notenoughupdates.core.config.MoulConfigGuiForgeInterop")
 public class NotEnoughUpdates {
 	public static final String MODID = "notenoughupdates";
-	public static final String VERSION = "2.1.0-REL";
-	public static final int VERSION_ID = 20101; //2.1.1 only so update notif works
-	public static final int PRE_VERSION_ID = 0;
-	public static final int HOTFIX_VERSION_ID = 0;
+	public static final String VERSION = VersionConst.VERSION;
+	private static final Pattern versionPattern = Pattern.compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)");
+	public static final int VERSION_ID = parseVersion(VERSION);
+
+	private static int parseVersion(String versionName) {
+		Matcher matcher = versionPattern.matcher(versionName);
+		if (!matcher.matches()) {
+			return 0;
+		}
+		int major = Integer.parseInt(matcher.group(1));
+		if (major < 0 || major > 99) {
+			return 0;
+		}
+		int minor = Integer.parseInt(matcher.group(2));
+		if (minor < 0 || minor > 99) {
+			return 0;
+		}
+		int patch = Integer.parseInt(matcher.group(3));
+		if (patch < 0 || patch > 99) {
+			return 0;
+		}
+		return major * 10000 + minor * 100 + patch;
+	}
 
 	public static final Logger LOGGER = LogManager.getLogger("NotEnoughUpdates");
 	/**
@@ -161,10 +156,24 @@ public class NotEnoughUpdates {
 			.setBiomeName("NeuCrystalHollowsCrystalNucleus")
 			.setFillerBlockMetadata(5470985)
 			.setTemperatureRainfall(0.95F, 0.9F);
+	public static final BiomeGenBase smolderingTomb =
+		(new BiomeGenHell(107))
+			.setColor(16777215)
+			.setBiomeName("NeuSmolderingTomb");
+	public static final BiomeGenBase glaciteMineshaft =
+		(new BiomeGenSnow(108, false))
+			.setColor(16777215)
+			.setBiomeName("NeuGlaciteMineshaft");
+	public static final BiomeGenBase glaciteTunnels =
+		(new BiomeGenSnow(109, false))
+			.setColor(16777215)
+			.setBiomeName("NeuGlaciteTunnels");
 	private static final long CHAT_MSG_COOLDOWN = 200;
 	//Stolen from Biscut and used for detecting whether in skyblock
 	private static final Set<String> SKYBLOCK_IN_ALL_LANGUAGES =
-		Sets.newHashSet("SKYBLOCK", "\u7A7A\u5C9B\u751F\u5B58", "\u7A7A\u5CF6\u751F\u5B58");
+		Sets.newHashSet("SKYBLOCK", "\u7A7A\u5C9B\u751F\u5B58", "\u7A7A\u5CF6\u751F\u5B58",
+			"SKIBLOCK"
+		); // april fools language
 	public static NotEnoughUpdates INSTANCE = null;
 	public static HashMap<String, String> petRarityToColourMap = new HashMap<String, String>() {{
 		put("UNKNOWN", EnumChatFormatting.RED.toString());
@@ -176,23 +185,30 @@ public class NotEnoughUpdates {
 		put("MYTHIC", EnumChatFormatting.LIGHT_PURPLE.toString());
 	}};
 	public static ProfileViewer profileViewer;
-	private final Gson gson = new GsonBuilder().setPrettyPrinting().excludeFieldsWithoutExposeAnnotation().create();
+	private final Gson gson = new GsonBuilder().setPrettyPrinting().excludeFieldsWithoutExposeAnnotation()
+																						 .registerTypeAdapterFactory(new PropertyTypeAdapterFactory())
+																						 .registerTypeAdapterFactory(KotlinTypeAdapterFactory.INSTANCE).create();
 	public NEUManager manager;
 	public NEUOverlay overlay;
 	public NEUConfig config;
 	public Navigation navigation = new Navigation(this);
 	public GuiScreen openGui = null;
 	public long lastOpenedGui = 0;
-	public Commands commands;
 	public boolean packDevEnabled = false;
 	public Color[][] colourMap = null;
-	public AutoUpdater autoUpdater = new AutoUpdater(this);
 	private File configFile;
 	private long lastChatMessage = 0;
 	private long secondLastChatMessage = 0;
 	private String currChatMessage = null;
 	private File neuDir;
 	private boolean hasSkyblockScoreboard;
+
+	public NotEnoughUpdates() {
+		// Budget Construction Event
+		((AccessorMinecraft) FMLClientHandler.instance().getClient())
+			.onGetDefaultResourcePacks()
+			.add(new NEURepoResourcePack(null, "neurepo"));
+	}
 
 	public File getConfigFile() {
 		return this.configFile;
@@ -204,13 +220,6 @@ public class NotEnoughUpdates {
 
 	public File getNeuDir() {
 		return this.neuDir;
-	}
-
-	public NotEnoughUpdates() {
-		// Budget Construction Event
-		((AccessorMinecraft) FMLClientHandler.instance().getClient())
-			.onGetDefaultResourcePacks()
-			.add(new NEURepoResourcePack(null, "neurepo"));
 	}
 
 	/**
@@ -226,16 +235,7 @@ public class NotEnoughUpdates {
 		configFile = new File(neuDir, "configNew.json");
 
 		if (configFile.exists()) {
-			try (
-				BufferedReader reader = new BufferedReader(new InputStreamReader(
-					new FileInputStream(configFile),
-					StandardCharsets.UTF_8
-				))
-			) {
-				config = gson.fromJson(reader, NEUConfig.class);
-			} catch (Exception exc) {
-				new RuntimeException("Invalid config file. This will reset the config to default", exc).printStackTrace();
-			}
+			config = ConfigUtil.loadConfig(NEUConfig.class, configFile, gson);
 		}
 
 		ItemCustomizeManager.loadCustomization(new File(neuDir, "itemCustomization.json"));
@@ -249,11 +249,6 @@ public class NotEnoughUpdates {
 			config = new NEUConfig();
 			saveConfig();
 		} else {
-			if (config.apiKey != null && config.apiKey.apiKey != null) {
-				config.apiData.apiKey = config.apiKey.apiKey;
-				config.apiKey = null;
-			}
-
 			//add the trophy fishing tab to the config
 			if (config.profileViewer.pageLayout.size() == 8) {
 				config.profileViewer.pageLayout.add(8);
@@ -261,61 +256,60 @@ public class NotEnoughUpdates {
 			if (config.profileViewer.pageLayout.size() == 9) {
 				config.profileViewer.pageLayout.add(9);
 			}
+			if (config.profileViewer.pageLayout.size() == 10) {
+				config.profileViewer.pageLayout.add(10);
+			}
+			if (config.profileViewer.pageLayout.size() == 11) {
+				config.profileViewer.pageLayout.add(11);
+			}
+			if (config.profileViewer.pageLayout.size() == 12) {
+				config.profileViewer.pageLayout.add(12);
+			}
+			if (config.profileViewer.pageLayout.size() == 13) {
+				config.profileViewer.pageLayout.add(13);
+			}
 
-			// Remove after 2.1 ig
-			if ("dangerous".equals(config.apiData.repoBranch) || "rune".equals(config.apiData.repoBranch)) {
-				config.apiData.repoBranch = "master";
-			} else if ("jani270".equals(config.apiData.repoUser)) {
+			if ((config.apiData.repoUser.isEmpty() || config.apiData.repoName.isEmpty() || config.apiData.repoBranch.isEmpty()) && config.apiData.autoupdate_new) {
 				config.apiData.repoUser = "NotEnoughUpdates";
+				config.apiData.repoName = "NotEnoughUpdates-REPO";
+				config.apiData.repoBranch = "master";
+			}
+
+			// When this is changed next, also change it in the build gradle
+			if ("prerelease".equals(config.apiData.repoBranch)) {
+				config.apiData.repoBranch = "master";
+			}
+
+			if (config.apiData.moulberryCodesApi.isEmpty()) {
+				config.apiData.moulberryCodesApi = "moulberry.codes";
+			}
+			if (config.ahGraph.serverUrl.trim().isEmpty()) {
+				config.ahGraph.serverUrl = "pricehistory.notenoughupdates.org";
 			}
 
 			saveConfig();
 		}
 
-		MinecraftForge.EVENT_BUS.register(this);
+		if (config != null)
+			if (config.mining.powderGrindingTrackerResetMode == 2)
+				OverlayManager.powderGrindingOverlay.load();
+
+		IOneConfigCompat.getInstance().ifPresent(it -> it.initConfig(config));
+
 		MinecraftForge.EVENT_BUS.register(new NEUEventListener(this));
 		MinecraftForge.EVENT_BUS.register(new RecipeGenerator(this));
-		MinecraftForge.EVENT_BUS.register(CapeManager.getInstance());
-		//MinecraftForge.EVENT_BUS.register(new SBGamemodes());
-		MinecraftForge.EVENT_BUS.register(new EnchantingSolvers());
-		MinecraftForge.EVENT_BUS.register(new CalendarOverlay());
-		MinecraftForge.EVENT_BUS.register(SBInfo.getInstance());
-		MinecraftForge.EVENT_BUS.register(CustomItemEffects.INSTANCE);
-		MinecraftForge.EVENT_BUS.register(new Constants());
-		MinecraftForge.EVENT_BUS.register(new DungeonMap());
-		MinecraftForge.EVENT_BUS.register(new SunTzu());
-		MinecraftForge.EVENT_BUS.register(new MiningStuff());
-		MinecraftForge.EVENT_BUS.register(FairySouls.getInstance());
-		MinecraftForge.EVENT_BUS.register(new CrystalOverlay());
-		MinecraftForge.EVENT_BUS.register(new ItemCooldowns());
-		MinecraftForge.EVENT_BUS.register(new DwarvenMinesWaypoints());
-		MinecraftForge.EVENT_BUS.register(new FuelBar());
-		MinecraftForge.EVENT_BUS.register(new AuctionProfit());
-		MinecraftForge.EVENT_BUS.register(XPInformation.getInstance());
 		MinecraftForge.EVENT_BUS.register(OverlayManager.petInfoOverlay);
 		MinecraftForge.EVENT_BUS.register(OverlayManager.timersOverlay);
-		MinecraftForge.EVENT_BUS.register(new NullzeeSphere());
-		MinecraftForge.EVENT_BUS.register(InventoryStorageSelector.getInstance());
-		MinecraftForge.EVENT_BUS.register(SlotLocking.getInstance());
-		MinecraftForge.EVENT_BUS.register(FishingHelper.getInstance());
-		MinecraftForge.EVENT_BUS.register(CrystalWishingCompassSolver.getInstance());
-		MinecraftForge.EVENT_BUS.register(new DwarvenMinesTextures());
-		MinecraftForge.EVENT_BUS.register(EquipmentOverlay.INSTANCE);
-		MinecraftForge.EVENT_BUS.register(CustomBiomes.INSTANCE);
 		MinecraftForge.EVENT_BUS.register(new ChatListener(this));
 		MinecraftForge.EVENT_BUS.register(new ItemTooltipListener(this));
 		MinecraftForge.EVENT_BUS.register(new ItemTooltipRngListener(this));
 		MinecraftForge.EVENT_BUS.register(new ItemTooltipEssenceShopListener(this));
 		MinecraftForge.EVENT_BUS.register(new RenderListener(this));
-		MinecraftForge.EVENT_BUS.register(new OldAnimationChecker());
-		MinecraftForge.EVENT_BUS.register(new SignCalculator());
-		MinecraftForge.EVENT_BUS.register(TrophyRewardOverlay.getInstance());
-		MinecraftForge.EVENT_BUS.register(PowerStoneStatsDisplay.getInstance());
-		MinecraftForge.EVENT_BUS.register(new AntiCoopAdd());
-		MinecraftForge.EVENT_BUS.register(AbiphoneWarning.getInstance());
-		MinecraftForge.EVENT_BUS.register(new BetterContainers());
-		MinecraftForge.EVENT_BUS.register(AuctionBINWarning.getInstance());
 		MinecraftForge.EVENT_BUS.register(navigation);
+		MinecraftForge.EVENT_BUS.register(new WorldListener(this));
+		AutoLoad.INSTANCE.provide(supplier -> MinecraftForge.EVENT_BUS.register(supplier.get()));
+		MinecraftForge.EVENT_BUS.register(MuseumItemHighlighter.INSTANCE);
+		MinecraftForge.EVENT_BUS.register(MuseumCheapestItemOverlay.INSTANCE);
 
 		if (Minecraft.getMinecraft().getResourceManager() instanceof IReloadableResourceManager) {
 			IReloadableResourceManager manager = (IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager();
@@ -326,7 +320,7 @@ public class NotEnoughUpdates {
 			manager.registerReloadListener(new CustomBlockSounds.ReloaderListener());
 		}
 
-		this.commands = new Commands();
+		BrigadierRoot.INSTANCE.updateHooks();
 
 		BackgroundBlur.registerListener();
 
@@ -334,6 +328,7 @@ public class NotEnoughUpdates {
 		manager.loadItemInformation();
 		overlay = new NEUOverlay(manager);
 		profileViewer = new ProfileViewer(manager);
+		HypixelItemAPI.INSTANCE.loadItemData();
 
 		for (KeyBinding kb : manager.keybinds) {
 			ClientRegistry.registerKeyBinding(kb);
@@ -352,39 +347,17 @@ public class NotEnoughUpdates {
 
 	public void saveConfig() {
 		try {
-			configFile.createNewFile();
-
-			try (
-				BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-					new FileOutputStream(configFile),
-					StandardCharsets.UTF_8
-				))
-			) {
-				writer.write(gson.toJson(config));
-			}
+			OverlayManager.powderGrindingOverlay.save();
 		} catch (Exception ignored) {
 		}
 
-		try {
-			ItemCustomizeManager.saveCustomization(new File(neuDir, "itemCustomization.json"));
-		} catch (Exception ignored) {
-		}
-		try {
-			StorageManager.getInstance().saveConfig(new File(neuDir, "storageItems.json"));
-		} catch (Exception ignored) {
-		}
-		try {
-			FairySouls.getInstance().saveFoundSoulsForAllProfiles(new File(neuDir, "collected_fairy_souls.json"), gson);
-		} catch (Exception ignored) {
-		}
-		try {
-			PetInfoOverlay.saveConfig(new File(neuDir, "petCache.json"));
-		} catch (Exception ignored) {
-		}
-		try {
-			SlotLocking.getInstance().saveConfig(new File(neuDir, "slotLocking.json"));
-		} catch (Exception ignored) {
-		}
+		ConfigUtil.saveConfig(config, configFile, gson);
+
+		ItemCustomizeManager.saveCustomization(new File(neuDir, "itemCustomization.json"));
+		StorageManager.getInstance().saveConfig(new File(neuDir, "storageItems.json"));
+		FairySouls.getInstance().saveFoundSoulsForAllProfiles(new File(neuDir, "collected_fairy_souls.json"), gson);
+		PetInfoOverlay.saveConfig(new File(neuDir, "petCache.json"));
+		SlotLocking.getInstance().saveConfig(new File(neuDir, "slotLocking.json"));
 	}
 
 	/**
@@ -392,20 +365,9 @@ public class NotEnoughUpdates {
 	 * If the last chat message was sent <200 ago, will cache the message for #onTick to handle.
 	 */
 	public void sendChatMessage(String message) {
-		if (System.currentTimeMillis() - lastChatMessage > CHAT_MSG_COOLDOWN) {
-			secondLastChatMessage = lastChatMessage;
-			lastChatMessage = System.currentTimeMillis();
-			Minecraft.getMinecraft().thePlayer.sendChatMessage(message);
-			currChatMessage = null;
-		} else {
-			currChatMessage = message;
-		}
 	}
 
 	public void trySendCommand(String message) {
-		if (ClientCommandHandler.instance.executeCommand(Minecraft.getMinecraft().thePlayer, message) == 0) {
-			sendChatMessage(message);
-		}
 	}
 
 	public void displayLinks(JsonObject update, int totalWidth) {
@@ -487,11 +449,6 @@ public class NotEnoughUpdates {
 			openGui = null;
 			lastOpenedGui = System.currentTimeMillis();
 		}
-		if (currChatMessage != null && currentTime - lastChatMessage > CHAT_MSG_COOLDOWN) {
-			lastChatMessage = currentTime;
-			Minecraft.getMinecraft().thePlayer.sendChatMessage(currChatMessage);
-			currChatMessage = null;
-		}
 	}
 
 	public boolean isOnSkyblock() {
@@ -507,9 +464,8 @@ public class NotEnoughUpdates {
 		Minecraft mc = Minecraft.getMinecraft();
 
 		if (mc != null && mc.theWorld != null && mc.thePlayer != null) {
-			if (mc.isSingleplayer() || mc.thePlayer.getClientBrand() == null ||
-				!mc.thePlayer.getClientBrand().toLowerCase().contains(".fun")) {
-				hasSkyblockScoreboard = true;
+			if (mc.isSingleplayer() || mc.thePlayer.getClientBrand() == null) {
+				hasSkyblockScoreboard = false;
 				return;
 			}
 
